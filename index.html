@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life in Weeks - 人生周数可视化</title>
+    <meta name="description" content="一个简单而深刻的人生时间可视化工具，以周为单位展示你的生命历程">
+    <meta property="og:title" content="Life in Weeks - 人生周数可视化">
+    <meta property="og:description" content="一个简单而深刻的人生时间可视化工具，以周为单位展示你的生命历程">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .week-grid {
+                transform: scale(0.8);
+                transform-origin: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .week-grid {
+                transform: scale(0.6);
+            }
+        }
+        
+        .share-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+
+        const t = (key) => {
+            const translations = {
+                pageTitle: "人生周数",
+                pageSubtitle: "一个简单的可视化工具，帮助你思考时间的流逝",
+                birthDateQuestion: "输入你的出生日期",
+                visualizeButton: "可视化你的时间",
+                startOverButton: "重新开始",
+                shareButton: "分享",
+                downloadCardButton: "下载分享卡片",
+                lifeInWeeksTitle: "你的人生周数",
+                weekHoverPast: " 你过去的一周",
+                weekHoverCurrent: " 你当前的一周",
+                weekHoverFuture: " 你未来可能的一周",
+                legendPast: "过去",
+                legendPresent: "现在",
+                legendFuture: "未来",
+                lifeHighlightsTitle: "人生亮点",
+                societalContextTitle: "社会背景",
+                cosmicPerspectiveTitle: "宇宙视角",
+                naturalWorldTitle: "自然世界",
+                shareCardTitle: "我的人生周数"
+            };
+            return translations[key] || key;
+        };
+
+        function WeeksOfLife() {
+            const [step, setStep] = useState(1);
+            const [birthdate, setBirthdate] = useState('');
+            const [stats, setStats] = useState(null);
+            const [showHoverData, setShowHoverData] = useState(false);
+            const [hoverWeek, setHoverWeek] = useState(null);
+            const [showShareOptions, setShowShareOptions] = useState(false);
+            
+            const calculateStats = (date) => {
+                const birthDate = new Date(date);
+                const today = new Date();
+                const birthYear = birthDate.getFullYear();
+                
+                const msInWeek = 1000 * 60 * 60 * 24 * 7;
+                const weeksLived = Math.floor((today - birthDate) / msInWeek);
+                
+                const totalWeeks = 4172;
+                const percentageLived = Math.round((weeksLived / totalWeeks) * 100);
+                
+                const msInDay = 1000 * 60 * 60 * 24;
+                const daysLived = Math.floor((today - birthDate) / msInDay);
+                
+                const hoursSlept = Math.floor(daysLived * 8);
+                const heartbeats = Math.floor(daysLived * 24 * 60 * 70);
+                const breaths = Math.floor(daysLived * 24 * 60 * 16);
+                const seasons = Math.floor(daysLived / 91.25);
+                
+                return {
+                    weeksLived,
+                    totalWeeks,
+                    percentageLived,
+                    daysLived,
+                    hoursSlept,
+                    heartbeats,
+                    breaths,
+                    seasons,
+                    birthYear
+                };
+            };
+
+            const handleSubmit = () => {
+                setStats(calculateStats(birthdate));
+                setStep(2);
+            };
+
+            const getFormattedNumber = (num) => {
+                return new Intl.NumberFormat().format(num);
+            };
+
+            const getPopulationAtYear = (year) => {
+                const populationData = {
+                    1950: 2.5, 1960: 3.0, 1970: 3.7, 1980: 4.4, 1990: 5.3,
+                    2000: 6.1, 2010: 6.9, 2020: 7.8, 2025: 8.1
+                };
+                
+                const years = Object.keys(populationData).map(Number);
+                const closestYear = years.reduce((prev, curr) => 
+                    Math.abs(curr - year) < Math.abs(prev - year) ? curr : prev
+                );
+                
+                return Math.round(populationData[closestYear] * 1000000000);
+            };
+
+            const shareToWechat = () => {
+                const text = `我已经度过了${getFormattedNumber(stats.weeksLived)}周，这是完整人生的${stats.percentageLived}%！快来看看你的人生周数可视化吧！${window.location.href}`;
+                
+                const isWechat = /micromessenger/.test(navigator.userAgent.toLowerCase());
+                
+                if (isWechat) {
+                    if (window.wx && window.wx.config) {
+                        window.wx.ready(() => {
+                            window.wx.onMenuShareTimeline({
+                                title: `我的人生周数: ${stats.percentageLived}%已完成`,
+                                link: window.location.href,
+                                imgUrl: '',
+                                success: () => console.log('分享成功')
+                            });
+                            window.wx.invoke('shareTimeline');
+                        });
+                    } else {
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert('内容已复制！请点击右上角"..."按钮分享到朋友圈');
+                        }).catch(() => {
+                            alert('请点击右上角"..."按钮，选择"分享到朋友圈"');
+                        });
+                    }
+                } else {
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('链接已复制！请在微信中粘贴分享');
+                    });
+                }
+            };
+
+            const shareToTwitter = () => {
+                const text = `I've lived ${getFormattedNumber(stats.weeksLived)} weeks, which is ${stats.percentageLived}% of a full life! Check out your life in weeks visualization!`;
+                const url = window.location.href;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+            };
+
+            const shareToFacebook = () => {
+                const url = window.location.href;
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+            };
+
+            const copyToClipboard = () => {
+                const text = `我已经度过了${getFormattedNumber(stats.weeksLived)}周，这是完整人生的${stats.percentageLived}%！快来看看你的人生周数可视化吧！${window.location.href}`;
+                
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('已复制到剪贴板！');
+                });
+            };
+
+            const downloadShareCard = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 1080;
+                canvas.height = 1350;
+
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(0.5, '#764ba2');
+                gradient.addColorStop(1, '#667eea');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                for (let i = 0; i < 100; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                
+                ctx.font = 'bold 64px Arial';
+                ctx.fillText('我的人生周数', canvas.width/2, 150);
+                
+                ctx.font = 'bold 120px Arial';
+                ctx.fillText(getFormattedNumber(stats.weeksLived), canvas.width/2, 300);
+                
+                ctx.font = '36px Arial';
+                ctx.fillText('周已度过', canvas.width/2, 350);
+                
+                ctx.font = 'bold 80px Arial';
+                ctx.fillText(`${stats.percentageLived}%`, canvas.width/2, 480);
+                
+                ctx.font = '36px Arial';
+                ctx.fillText('的人生已完成', canvas.width/2, 530);
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width/4, 580);
+                ctx.lineTo(canvas.width*3/4, 580);
+                ctx.stroke();
+                
+                ctx.font = '32px Arial';
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                
+                ctx.fillText(`${getFormattedNumber(stats.daysLived)} 天的经历`, canvas.width/2, 680);
+                ctx.fillText(`${getFormattedNumber(stats.heartbeats)} 次心跳`, canvas.width/2, 730);
+                ctx.fillText(`${getFormattedNumber(stats.breaths)} 次呼吸`, canvas.width/2, 780);
+                ctx.fillText(`${getFormattedNumber(stats.hoursSlept)} 小时睡眠`, canvas.width/2, 830);
+                
+                ctx.font = '28px Arial';
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                
+                const earthDistance = Math.round(stats.daysLived * 1.6 * 1000000);
+                ctx.fillText(`地球行进距离: ${getFormattedNumber(earthDistance)} km`, canvas.width/2, 920);
+                
+                const lunarCycles = Math.round(stats.daysLived / 29.53);
+                ctx.fillText(`${getFormattedNumber(lunarCycles)} 个月亮周期`, canvas.width/2, 960);
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.font = '24px Arial';
+                ctx.fillText('Life in Weeks Visualization', canvas.width/2, 1250);
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                for (let i = 0; i < 20; i++) {
+                    ctx.beginPath();
+                    ctx.arc(100 + i * 45, 1300, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+
+                const link = document.createElement('a');
+                link.download = `life-in-weeks-${stats.weeksLived}-weeks.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+            };
+
+            const renderWeekGrid = () => {
+                if (!stats) return null;
+                
+                const rows = [];
+                const weeksPerRow = 52;
+                const totalRows = Math.ceil(stats.totalWeeks / weeksPerRow);
+                
+                for (let row = 0; row < totalRows; row++) {
+                    const weekCells = [];
+                    for (let col = 0; col < weeksPerRow; col++) {
+                        const weekNumber = row * weeksPerRow + col;
+                        if (weekNumber < stats.totalWeeks) {
+                            const isPast = weekNumber < stats.weeksLived;
+                            const isCurrent = weekNumber === stats.weeksLived;
+                            
+                            let cellClass = "w-1.5 h-1.5 rounded-full transition-all duration-500 ease-out transform hover:scale-150 hover:z-10 relative cursor-pointer ";
+                            if (isPast) {
+                                cellClass += "bg-gradient-to-br from-blue-400 to-indigo-600 shadow-sm hover:shadow-lg ";
+                            } else if (isCurrent) {
+                                cellClass += "bg-gradient-to-br from-orange-400 to-pink-500 shadow-md animate-pulse hover:shadow-xl ring-2 ring-orange-300 ";
+                            } else {
+                                cellClass += "bg-gray-200 hover:bg-gray-300 ";
+                            }
+                            
+                            weekCells.push(
+                                React.createElement('div', {
+                                    key: weekNumber,
+                                    className: cellClass,
+                                    onMouseEnter: () => {
+                                        setHoverWeek(weekNumber);
+                                        setShowHoverData(true);
+                                    },
+                                    onMouseLeave: () => setShowHoverData(false)
+                                })
+                            );
+                        }
+                    }
+                    
+                    rows.push(
+                        React.createElement('div', {
+                            key: row,
+                            className: "flex gap-1 justify-center"
+                        }, weekCells)
+                    );
+                }
+                
+                return React.createElement('div', { className: "mt-4 md:mt-8" },
+                    React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-4 md:p-8 shadow-2xl shadow-blue-500/10" },
+                        React.createElement('div', { className: "flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6" },
+                            React.createElement('h2', { className: "text-xl md:text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4 md:mb-0" }, t('lifeInWeeksTitle')),
+                            React.createElement('div', { className: "flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm" },
+                                React.createElement('div', { className: "flex items-center space-x-1 md:space-x-2" },
+                                    React.createElement('div', { className: "w-2 h-2 md:w-3 md:h-3 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600" }),
+                                    React.createElement('span', { className: "text-gray-600 font-medium" }, t('legendPast'))
+                                ),
+                                React.createElement('div', { className: "flex items-center space-x-1 md:space-x-2" },
+                                    React.createElement('div', { className: "w-2 h-2 md:w-3 md:h-3 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 animate-pulse ring-1 md:ring-2 ring-orange-300" }),
+                                    React.createElement('span', { className: "text-gray-600 font-medium" }, t('legendPresent'))
+                                ),
+                                React.createElement('div', { className: "flex items-center space-x-1 md:space-x-2" },
+                                    React.createElement('div', { className: "w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-200" }),
+                                    React.createElement('span', { className: "text-gray-600 font-medium" }, t('legendFuture'))
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: "week-grid space-y-1 overflow-hidden rounded-2xl p-2 md:p-4 bg-gray-50/50" }, rows),
+                        showHoverData && React.createElement('div', { className: "mt-4 md:mt-6 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100" },
+                            React.createElement('p', { className: "text-xs md:text-sm font-medium text-gray-700" },
+                                React.createElement('span', { className: "text-blue-600" }, `Week ${hoverWeek + 1}`),
+                                hoverWeek < stats.weeksLived ? 
+                                    t('weekHoverPast') : 
+                                    hoverWeek === stats.weeksLived ? 
+                                    t('weekHoverCurrent') : 
+                                    t('weekHoverFuture')
+                            )
+                        )
+                    )
+                );
+            };
+
+            const renderStats = () => {
+                if (!stats) return null;
+                
+                return React.createElement('div', { className: "mt-4 md:mt-8 space-y-4 md:space-y-6" },
+                    // Life highlights
+                    React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-4 md:p-8 shadow-2xl shadow-purple-500/10" },
+                        React.createElement('div', { className: "flex items-center mb-4 md:mb-6" },
+                            React.createElement('div', { className: "w-1 h-6 md:h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3 md:mr-4" }),
+                            React.createElement('h2', { className: "text-xl md:text-2xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent" }, t('lifeHighlightsTitle'))
+                        ),
+                        React.createElement('div', { className: "space-y-4 md:space-y-6" },
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700 leading-relaxed" },
+                                    `你已经度过了 `,
+                                    React.createElement('span', { className: "font-bold text-purple-600 text-base md:text-lg" }, getFormattedNumber(stats.weeksLived)),
+                                    ` 周，这是完整人生的 `,
+                                    React.createElement('span', { className: "font-bold text-pink-600 text-base md:text-lg" }, stats.percentageLived + '%'),
+                                    `。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `这相当于 `,
+                                    React.createElement('span', { className: "font-bold text-blue-600" }, getFormattedNumber(stats.daysLived)),
+                                    ` 天的经历，大约观察了 `,
+                                    React.createElement('span', { className: "font-bold text-cyan-600" }, getFormattedNumber(stats.seasons)),
+                                    ` 个季节。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `你的心脏大约跳动了 `,
+                                    React.createElement('span', { className: "font-bold text-green-600" }, getFormattedNumber(stats.heartbeats)),
+                                    ` 次。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl border border-orange-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `你大约呼吸了 `,
+                                    React.createElement('span', { className: "font-bold text-orange-600" }, getFormattedNumber(stats.breaths)),
+                                    ` 次，睡眠了约 `,
+                                    React.createElement('span', { className: "font-bold text-yellow-600" }, getFormattedNumber(stats.hoursSlept)),
+                                    ` 小时。`
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Societal context
+                    React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-4 md:p-8 shadow-2xl shadow-green-500/10" },
+                        React.createElement('div', { className: "flex items-center mb-4 md:mb-6" },
+                            React.createElement('div', { className: "w-1 h-6 md:h-8 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full mr-3 md:mr-4" }),
+                            React.createElement('h2', { className: "text-xl md:text-2xl font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent" }, t('societalContextTitle'))
+                        ),
+                        React.createElement('div', { className: "space-y-3 md:space-y-4" },
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `在你的一生中，人类人口从 `,
+                                    stats.birthYear ? React.createElement('span', { className: "font-bold text-green-600" }, getFormattedNumber(getPopulationAtYear(stats.birthYear))) : "",
+                                    ` 增长到超过 `,
+                                    React.createElement('span', { className: "font-bold text-emerald-600" }, "80"),
+                                    ` 亿人。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl border border-teal-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `普通人一生会遇到大约 `,
+                                    React.createElement('span', { className: "font-bold text-teal-600" }, "80,000"),
+                                    ` 个人。你可能已经遇到了大约 `,
+                                    React.createElement('span', { className: "font-bold text-cyan-600" }, getFormattedNumber(Math.round(80000 * (stats.percentageLived/100)))),
+                                    ` 个人。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `自你出生以来，人类总共经历了大约 `,
+                                    React.createElement('span', { className: "font-bold text-blue-600" }, getFormattedNumber(Math.round(stats.daysLived * 385000))),
+                                    ` 次出生和 `,
+                                    React.createElement('span', { className: "font-bold text-indigo-600" }, getFormattedNumber(Math.round(stats.daysLived * 166000))),
+                                    ` 次死亡。`
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Cosmic perspective
+                    React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-4 md:p-8 shadow-2xl shadow-indigo-500/10" },
+                        React.createElement('div', { className: "flex items-center mb-4 md:mb-6" },
+                            React.createElement('div', { className: "w-1 h-6 md:h-8 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full mr-3 md:mr-4" }),
+                            React.createElement('h2', { className: "text-xl md:text-2xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" }, t('cosmicPerspectiveTitle'))
+                        ),
+                        React.createElement('div', { className: "space-y-3 md:space-y-4" },
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `自你出生以来，地球围绕太阳在太空中行进了大约 `,
+                                    React.createElement('span', { className: "font-bold text-indigo-600" }, getFormattedNumber(Math.round(stats.daysLived * 1.6 * 1000000))),
+                                    ` 公里。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `可观测宇宙大约有 `,
+                                    React.createElement('span', { className: "font-bold text-purple-600" }, "930"),
+                                    ` 亿光年宽，这意味着光需要 `,
+                                    React.createElement('span', { className: "font-bold text-pink-600" }, "930"),
+                                    ` 亿年才能穿越它。你的整个寿命只是宇宙年龄的 `,
+                                    React.createElement('span', { className: "font-bold text-rose-600" }, (80/13800000000 * 100).toFixed(10) + '%'),
+                                    `。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `在你的一生中，我们的太阳系在银河系中移动了约 `,
+                                    React.createElement('span', { className: "font-bold text-violet-600" }, getFormattedNumber(Math.round(stats.daysLived * 24 * 828000))),
+                                    ` 公里。`
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Natural world
+                    React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-4 md:p-8 shadow-2xl shadow-emerald-500/10" },
+                        React.createElement('div', { className: "flex items-center mb-4 md:mb-6" },
+                            React.createElement('div', { className: "w-1 h-6 md:h-8 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full mr-3 md:mr-4" }),
+                            React.createElement('h2', { className: "text-xl md:text-2xl font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent" }, t('naturalWorldTitle'))
+                        ),
+                        React.createElement('div', { className: "space-y-3 md:space-y-4" },
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `你经历了大约 `,
+                                    React.createElement('span', { className: "font-bold text-emerald-600" }, getFormattedNumber(Math.round(stats.daysLived / 29.53))),
+                                    ` 个月亮周期和 `,
+                                    React.createElement('span', { className: "font-bold text-teal-600" }, getFormattedNumber(Math.floor(stats.daysLived / 365.25))),
+                                    ` 次环绕太阳的旅程。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `一棵巨杉可以活3000多年。你目前的年龄是其潜在寿命的 `,
+                                    React.createElement('span', { className: "font-bold text-green-600" }, ((stats.daysLived / 365.25) / 3000 * 100).toFixed(2) + '%'),
+                                    `。`
+                                )
+                            ),
+                            React.createElement('div', { className: "p-3 md:p-4 bg-gradient-to-r from-lime-50 to-green-50 rounded-2xl border border-lime-100" },
+                                React.createElement('p', { className: "text-sm md:text-base text-gray-700" },
+                                    `在你的一生中，你的身体已经多次更换了大部分细胞。你并非由出生时的相同原子构成。`
+                                )
+                            )
+                        )
+                    )
+                );
+            };
+
+            const renderShareButtons = () => {
+                if (!showShareOptions) return null;
+                
+                return React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" },
+                    React.createElement('div', { className: "bg-white rounded-3xl p-6 max-w-md w-full" },
+                        React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                            React.createElement('h3', { className: "text-xl font-semibold text-gray-800" }, t('shareButton')),
+                            React.createElement('button', {
+                                onClick: () => setShowShareOptions(false),
+                                className: "text-gray-500 hover:text-gray-700 text-2xl"
+                            }, '×')
+                        ),
+                        
+                        React.createElement('div', { className: "space-y-4" },
+                            React.createElement('div', { className: "grid grid-cols-2 gap-3" },
+                                React.createElement('button', {
+                                    onClick: shareToWechat,
+                                    className: "share-btn bg-green-500 text-white p-4 rounded-2xl font-semibold hover:bg-green-600 transition-all"
+                                }, '💬 微信朋友圈'),
+                                
+                                React.createElement('button', {
+                                    onClick: shareToTwitter,
+                                    className: "share-btn bg-blue-500 text-white p-4 rounded-2xl font-semibold hover:bg-blue-600 transition-all"
+                                }, '🐦 Twitter'),
+                                
+                                React.createElement('button', {
+                                    onClick: shareToFacebook,
+                                    className: "share-btn bg-blue-600 text-white p-4 rounded-2xl font-semibold hover:bg-blue-700 transition-all"
+                                }, '📘 Facebook'),
+                                
+                                React.createElement('button', {
+                                    onClick: copyToClipboard,
+                                    className: "share-btn bg-gray-600 text-white p-4 rounded-2xl font-semibold hover:bg-gray-700 transition-all"
+                                }, '📋 复制链接')
+                            ),
+                            
+                            React.createElement('button', {
+                                onClick: downloadShareCard,
+                                className: "w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-2xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all"
+                            }, '🎨 ' + t('downloadCardButton'))
+                        )
+                    )
+                );
+            };
+
+            const handleReset = () => {
+                setBirthdate('');
+                setStats(null);
+                setStep(1);
+                setShowShareOptions(false);
+            };
+
+            return React.createElement('div', { className: "min-h-screen relative overflow-hidden" },
+                React.createElement('div', { className: "fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" },
+                    React.createElement('div', { className: "absolute inset-0 overflow-hidden" },
+                        React.createElement('div', { className: "absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/30 to-purple-400/30 rounded-full blur-3xl animate-pulse" }),
+                        React.createElement('div', { 
+                            className: "absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-pulse",
+                            style: { animationDelay: '2s' }
+                        }),
+                        React.createElement('div', { 
+                            className: "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-indigo-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse",
+                            style: { animationDelay: '4s' }
+                        })
+                    ),
+                    React.createElement('div', { 
+                        className: "absolute inset-0 opacity-5",
+                        style: {
+                            backgroundImage: `radial-gradient(circle, #6366f1 1px, transparent 1px)`,
+                            backgroundSize: '20px 20px'
+                        }
+                    })
+                ),
+                
+                React.createElement('div', { className: "relative z-10 min-h-screen p-3 md:p-6" },
+                    React.createElement('div', { className: "h-6" }),
+                    React.createElement('div', { className: "max-w-4xl mx-auto" },
+                        React.createElement('div', { className: "text-center mb-8 md:mb-12" },
+                            React.createElement('h1', { className: "text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-3 md:mb-4 tracking-tight px-4" }, t('pageTitle')),
+                            React.createElement('p', { className: "text-base md:text-lg text-gray-600 font-medium px-4" }, t('pageSubtitle'))
+                        ),
+                        
+                        step === 1 ? 
+                            React.createElement('div', { className: "bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-6 md:p-8 shadow-2xl shadow-blue-500/10 mx-4 md:mx-0" },
+                                React.createElement('h2', { className: "text-xl md:text-2xl font-semibold text-gray-800 mb-6 md:mb-8 text-center" }, t('birthDateQuestion')),
+                                React.createElement('div', { className: "space-y-6" },
+                                    React.createElement('div', { className: "relative" },
+                                        React.createElement('input', {
+                                            type: "date",
+                                            className: "w-full p-4 text-base md:text-lg bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-2xl text-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 placeholder-gray-400",
+                                            value: birthdate,
+                                            onChange: (e) => setBirthdate(e.target.value)
+                                        })
+                                    ),
+                                    React.createElement('button', {
+                                        onClick: handleSubmit,
+                                        className: "w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-8 rounded-2xl font-semibold text-base md:text-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98]",
+                                        disabled: !birthdate
+                                    }, t('visualizeButton'))
+                                )
+                            ) :
+                            React.createElement(React.Fragment, null,
+                                renderWeekGrid(),
+                                renderStats(),
+                                React.createElement('div', { className: "mt-6 md:mt-8 flex flex-col md:flex-row gap-4 mx-4 md:mx-0" },
+                                    React.createElement('button', {
+                                        onClick: () => setShowShareOptions(true),
+                                        className: "flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-8 rounded-2xl font-semibold text-base md:text-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all duration-300 shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                                    }, '🚀 ' + t('shareButton')),
+                                    React.createElement('button', {
+                                        onClick: handleReset,
+                                        className: "flex-1 bg-white/80 backdrop-blur-xl border border-white/20 text-gray-800 py-4 px-8 rounded-2xl font-semibold text-base md:text-lg hover:bg-white/90 focus:outline-none focus:ring-4 focus:ring-gray-500/20 transition-all duration-300 shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                                    }, t('startOverButton'))
+                                )
+                            )
+                    )
+                ),
+                
+                renderShareButtons()
+            );
+        }
+
+        ReactDOM.render(React.createElement(WeeksOfLife), document.getElementById('root'));
+    </script>
+</body>
+</html>
